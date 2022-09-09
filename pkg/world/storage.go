@@ -19,7 +19,7 @@ type SQLiteStorage struct {
 }
 
 func openSQLite(path string) (*SQLiteStorage, error) {
-	db, err := sql.Open("sqlite3", "./foo.db")
+	db, err := sql.Open("sqlite3", path)
 	if err != nil {
 		return nil, err
 	}
@@ -41,7 +41,14 @@ func openSQLite(path string) (*SQLiteStorage, error) {
 }
 
 func (s *SQLiteStorage) GetBlockData(pos Position) ([]byte, error) {
-	return []byte{}, nil
+	var data []byte
+	err := s.getBlock.QueryRow(pos.encode()).Scan(&data)
+
+	if err != nil {
+		return data, err
+	}
+
+	return data, nil
 }
 
 func (s *SQLiteStorage) SetBlockData(pos Position, data []byte) error {
