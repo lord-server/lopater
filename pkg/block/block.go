@@ -2,7 +2,6 @@ package block
 
 import (
 	"bytes"
-	"compress/zlib"
 	"encoding/binary"
 	"io"
 
@@ -47,55 +46,8 @@ func readString(r io.Reader) (string, error) {
 }
 
 type MapBlock struct {
-	mappings map[uint16]string
-	nodeData []byte
-}
-
-type ReaderCounter struct {
-	inner *bytes.Reader
-	count int64
-}
-
-func NewReaderCounter(r *bytes.Reader) *ReaderCounter {
-	return &ReaderCounter{
-		inner: r,
-		count: 0,
-	}
-}
-
-func (r *ReaderCounter) Read(p []byte) (n int, err error) {
-	n, err = r.inner.Read(p)
-	r.count += int64(n)
-	return
-}
-
-func (r *ReaderCounter) ReadByte() (byte, error) {
-	b, err := r.inner.ReadByte()
-	r.count += 1
-	return b, err
-}
-
-func inflate(reader *bytes.Reader) ([]byte, error) {
-	position, _ := reader.Seek(0, io.SeekCurrent)
-
-	counter := NewReaderCounter(reader)
-	z, err := zlib.NewReader(counter)
-	if err != nil {
-		panic(err)
-	}
-	defer z.Close()
-
-	data, err := io.ReadAll(z)
-	if err != nil {
-		panic(err)
-	}
-
-	_, err = reader.Seek(position+counter.count, io.SeekStart)
-	if err != nil {
-		return nil, err
-	}
-
-	return data, err
+	Mappings map[uint16]string
+	NodeData []byte
 }
 
 func readMappings(reader *bytes.Reader) (map[uint16]string, error) {
@@ -143,12 +95,12 @@ func decodeLegacyBlock(reader *bytes.Reader, version uint8) (*MapBlock, error) {
 
 	nodeData, err := inflate(reader)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	_, err = inflate(reader)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	// - uint8 staticObjectVersion
@@ -159,7 +111,7 @@ func decodeLegacyBlock(reader *bytes.Reader, version uint8) (*MapBlock, error) {
 
 	staticObjectCount, err := readU16(reader)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	for i := 0; i < int(staticObjectCount); i++ {
@@ -171,7 +123,7 @@ func decodeLegacyBlock(reader *bytes.Reader, version uint8) (*MapBlock, error) {
 		}
 		dataSize, err := readU16(reader)
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
 		_, err = reader.Seek(int64(dataSize), io.SeekCurrent)
 		if err != nil {
@@ -192,8 +144,8 @@ func decodeLegacyBlock(reader *bytes.Reader, version uint8) (*MapBlock, error) {
 	}
 
 	return &MapBlock{
-		mappings: mappings,
-		nodeData: nodeData,
+		Mappings: mappings,
+		NodeData: nodeData,
 	}, nil
 }
 
@@ -239,8 +191,8 @@ func decodeBlock(reader *bytes.Reader) (*MapBlock, error) {
 	}
 
 	return &MapBlock{
-		mappings: mappings,
-		nodeData: nodeData,
+		Mappings: mappings,
+		NodeData: nodeData,
 	}, nil
 }
 
@@ -255,29 +207,10 @@ func DecodeMapBlock(data []byte) (*MapBlock, error) {
 	if version < 29 {
 		mapblock, err := decodeLegacyBlock(reader, version)
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
 		return mapblock, nil
 	}
 
 	return decodeBlock(reader)
 }
-
-func (b *MapBlock) ResolveName(id uint16) string {
-	return b.mappings[id]
-}
-
-/*
-func (b *MapBlock) GetNode(pos world.Position) Node {
-	index := pos.Z*spatial.BlockSize*spatial.BlockSize + pos.Y*spatial.BlockSize + pos.X
-	idHi := uint16(b.nodeData[2*index])
-	idLo := uint16(b.nodeData[2*index+1])
-	param1 := b.nodeData[2*spatial.BlockVolume+index]
-	param2 := b.nodeData[3*spatial.BlockVolume+index]
-	return Node{
-		ID:     (idHi << 8) | idLo,
-		Param1: param1,
-		Param2: param2,
-	}
-}
-*/
