@@ -1,14 +1,25 @@
 package main
 
 import (
+	"flag"
 	"log"
-	"os"
 
 	"github.com/lord-server/lopater/pkg/world"
 )
 
+var (
+	ConfigPath = flag.String("config", "config.hjson", "Path to config")
+)
+
+func init() {
+	flag.Parse()
+}
+
 func main() {
-	worldPath := os.Args[1]
+	if flag.NArg() < 1 {
+		log.Fatalf("usage: lopater [-config /path/to/config.hjson] </path/to/world>")
+	}
+	worldPath := flag.Args()[0]
 
 	w, err := world.Open(worldPath)
 	if err != nil {

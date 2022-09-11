@@ -31,6 +31,11 @@ func (b *binaryReader) ReadUint32() (uint32, error) {
 	return value, err
 }
 
+func (b *binaryReader) ReadInt32() (int32, error) {
+	value, err := b.ReadUint32()
+	return int32(value), err
+}
+
 func (b *binaryReader) ReadString() (string, error) {
 	length, err := b.ReadUint16()
 	if err != nil {
