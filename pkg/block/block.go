@@ -1,13 +1,28 @@
 package block
 
 import (
+	"fmt"
 	"io"
 
 	"github.com/klauspost/compress/zstd"
 )
 
+// MinSupportedVersion and MaxSupportedVersion provide version range
+// where correct encoding is guaranteed to be correct. Using decoder on MapBlocks
+// outside of this range will produce an error.
+const (
+	MinSupportedVersion = 25
+	MaxSupportedVersion = 29
+)
+
+// BlockSize defines the side length of a MapBlock in nodes
 const BlockSize = 16
+
+// BlockVolume defines the volume of a MapBlock in nodes
 const BlockVolume = BlockSize * BlockSize * BlockSize
+
+// NodeSizeInBytes is the amount of space (in bytes) required to store a single
+// node in a non-compressed MapBlock
 const NodeSizeInBytes = 4
 
 type Node struct {
@@ -17,8 +32,13 @@ type Node struct {
 }
 
 type MapBlock struct {
+	Flags            uint8
+	LightingComplete uint16
+	Timestamp        uint32
+
 	Mappings map[uint16]string
 	NodeData []byte
+	NodeMeta []byte
 }
 
 func readMappings(reader *binaryReader) (map[uint16]string, error) {
@@ -45,35 +65,40 @@ func readMappings(reader *binaryReader) (map[uint16]string, error) {
 }
 
 func decodeLegacyBlock(reader *binaryReader, version uint8) (*MapBlock, error) {
+	var mapBlock MapBlock
+	var err error
+
+	mapBlock.Flags, err = reader.ReadUint8()
+	if err != nil {
+		return nil, fmt.Errorf("unable to decode flags: %w", err)
+	}
+
 	if version >= 27 {
-		// - uint8 flags
-		// - uint16 lighting_complete
-		// - uint8 content_width
-		// - uint8 params_width
-		_, err := reader.Seek(1+2+1+1, io.SeekCurrent)
+		mapBlock.LightingComplete, err = reader.ReadUint16()
 		if err != nil {
-			return nil, err
-		}
-	} else {
-		// - uint8 flags
-		// - uint8 content_width
-		// - uint8 params_width
-		_, err := reader.Seek(1+1+1, io.SeekCurrent)
-		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("unable to decode lighting flags: %w", err)
 		}
 	}
 
-	nodeData, err := reader.ReadZlib()
+	// Skip constant values:
+	// - uint8 content_width
+	// - uint8 params_width
+	_, err = reader.Seek(1+1, io.SeekCurrent)
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = reader.ReadZlib()
+	mapBlock.NodeData, err = reader.ReadZlib()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unable to decode node data: %w", err)
 	}
 
+	mapBlock.NodeMeta, err = reader.ReadZlib()
+	if err != nil {
+		return nil, fmt.Errorf("unable to decode node metadata: %w", err)
+	}
+
+	// Skip constant value:
 	// - uint8 staticObjectVersion
 	_, err = reader.Seek(1, io.SeekCurrent)
 	if err != nil {
@@ -82,7 +107,7 @@ func decodeLegacyBlock(reader *binaryReader, version uint8) (*MapBlock, error) {
 
 	staticObjectCount, err := reader.ReadUint16()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unable to decode static object count: %w", err)
 	}
 
 	for i := 0; i < int(staticObjectCount); i++ {
@@ -103,21 +128,24 @@ func decodeLegacyBlock(reader *binaryReader, version uint8) (*MapBlock, error) {
 	}
 
 	// - uint32 timestamp
+	mapBlock.Timestamp, err = reader.ReadUint32()
+	if err != nil {
+		return nil, fmt.Errorf("unable to decode timestamp: %w", err)
+	}
+
+	// Skip constant value:
 	// - uint8 mappingVersion
-	_, err = reader.Seek(4+1, io.SeekCurrent)
+	_, err = reader.Seek(1, io.SeekCurrent)
 	if err != nil {
 		return nil, err
 	}
 
-	mappings, err := readMappings(reader)
+	mapBlock.Mappings, err = readMappings(reader)
 	if err != nil {
 		return nil, err
 	}
 
-	return &MapBlock{
-		Mappings: mappings,
-		NodeData: nodeData,
-	}, nil
+	return &mapBlock, nil
 }
 
 func decodeBlock(reader *binaryReader) (*MapBlock, error) {
@@ -134,17 +162,31 @@ func decodeBlock(reader *binaryReader) (*MapBlock, error) {
 
 	reader = newBinaryReader(data)
 
-	// Skip:
-	// - uint8 flags
-	// - uint16 lighting_complete
-	// - uint32 timestamp
+	var mapBlock MapBlock
+
+	mapBlock.Flags, err = reader.ReadUint8()
+	if err != nil {
+		return nil, fmt.Errorf("unable to decode flags: %w", err)
+	}
+
+	mapBlock.LightingComplete, err = reader.ReadUint16()
+	if err != nil {
+		return nil, fmt.Errorf("unable to decode lighting flags: %w", err)
+	}
+
+	mapBlock.Timestamp, err = reader.ReadUint32()
+	if err != nil {
+		return nil, err
+	}
+
+	// Skip constant value:
 	// - uint8 mapping version
 	_, err = reader.Seek(1+2+4+1, io.SeekCurrent)
 	if err != nil {
 		return nil, err
 	}
 
-	mappings, err := readMappings(reader)
+	mapBlock.Mappings, err = readMappings(reader)
 	if err != nil {
 		return nil, err
 	}
@@ -161,13 +203,10 @@ func decodeBlock(reader *binaryReader) (*MapBlock, error) {
 		return nil, err
 	}
 
-	return &MapBlock{
-		Mappings: mappings,
-		NodeData: nodeData,
-	}, nil
+	return &mapBlock, nil
 }
 
-func DecodeMapBlock(data []byte) (*MapBlock, error) {
+func Decode(data []byte) (*MapBlock, error) {
 	reader := newBinaryReader(data)
 
 	version, err := reader.ReadUint8()

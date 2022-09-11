@@ -59,7 +59,7 @@ func (w *World) GetBlock(pos Position) (*block.MapBlock, error) {
 		return nil, nil
 	}
 
-	mapBlock, err := block.DecodeMapBlock(data)
+	mapBlock, err := block.Decode(data)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode MapBlock: %w", err)
 	}

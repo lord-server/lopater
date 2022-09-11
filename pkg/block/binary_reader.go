@@ -16,13 +16,17 @@ func newBinaryReader(data []byte) *binaryReader {
 }
 
 func (b *binaryReader) ReadUint8() (uint8, error) {
-	var value uint8
-	err := binary.Read(b, binary.BigEndian, &value)
-	return value, err
+	return b.ReadByte()
 }
 
 func (b *binaryReader) ReadUint16() (uint16, error) {
 	var value uint16
+	err := binary.Read(b, binary.BigEndian, &value)
+	return value, err
+}
+
+func (b *binaryReader) ReadUint32() (uint32, error) {
+	var value uint32
 	err := binary.Read(b, binary.BigEndian, &value)
 	return value, err
 }
