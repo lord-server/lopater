@@ -1,13 +1,11 @@
 package block
 
-import "bytes"
-
 type readerCounter struct {
-	inner *bytes.Reader
+	inner *binaryReader
 	count int64
 }
 
-func newReaderCounter(r *bytes.Reader) *readerCounter {
+func newReaderCounter(r *binaryReader) *readerCounter {
 	return &readerCounter{
 		inner: r,
 		count: 0,

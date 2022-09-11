@@ -17,7 +17,7 @@ func main() {
 
 	log.Printf("backend = %v", w.Metadata.BackendType)
 
-	data, err := w.Storage.GetBlockData(world.Position{
+	block, err := w.GetBlock(world.Position{
 		X: 0,
 		Y: 0,
 		Z: 0,
@@ -26,6 +26,6 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	} else {
-		log.Fatal(data)
+		log.Fatal(block)
 	}
 }

@@ -1,8 +1,6 @@
 package block
 
 import (
-	"bytes"
-	"encoding/binary"
 	"io"
 
 	"github.com/klauspost/compress/zstd"
@@ -18,51 +16,24 @@ type Node struct {
 	Param2 uint8
 }
 
-func readU8(r io.Reader) (uint8, error) {
-	var value uint8
-	err := binary.Read(r, binary.BigEndian, &value)
-	return value, err
-}
-
-func readU16(r io.Reader) (uint16, error) {
-	var value uint16
-	err := binary.Read(r, binary.BigEndian, &value)
-	return value, err
-}
-
-func readString(r io.Reader) (string, error) {
-	length, err := readU16(r)
-	if err != nil {
-		return "", err
-	}
-
-	buf := make([]byte, length)
-	_, err = io.ReadFull(r, buf)
-	if err != nil {
-		return "", err
-	}
-
-	return string(buf), nil
-}
-
 type MapBlock struct {
 	Mappings map[uint16]string
 	NodeData []byte
 }
 
-func readMappings(reader *bytes.Reader) (map[uint16]string, error) {
-	mappingCount, err := readU16(reader)
+func readMappings(reader *binaryReader) (map[uint16]string, error) {
+	mappingCount, err := reader.ReadUint16()
 	if err != nil {
 		return nil, err
 	}
 
 	mappings := make(map[uint16]string)
 	for i := 0; i < int(mappingCount); i++ {
-		id, err := readU16(reader)
+		id, err := reader.ReadUint16()
 		if err != nil {
 			return nil, err
 		}
-		name, err := readString(reader)
+		name, err := reader.ReadString()
 		if err != nil {
 			return nil, err
 		}
@@ -73,7 +44,7 @@ func readMappings(reader *bytes.Reader) (map[uint16]string, error) {
 	return mappings, nil
 }
 
-func decodeLegacyBlock(reader *bytes.Reader, version uint8) (*MapBlock, error) {
+func decodeLegacyBlock(reader *binaryReader, version uint8) (*MapBlock, error) {
 	if version >= 27 {
 		// - uint8 flags
 		// - uint16 lighting_complete
@@ -93,12 +64,12 @@ func decodeLegacyBlock(reader *bytes.Reader, version uint8) (*MapBlock, error) {
 		}
 	}
 
-	nodeData, err := inflate(reader)
+	nodeData, err := reader.ReadZlib()
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = inflate(reader)
+	_, err = reader.ReadZlib()
 	if err != nil {
 		return nil, err
 	}
@@ -109,7 +80,7 @@ func decodeLegacyBlock(reader *bytes.Reader, version uint8) (*MapBlock, error) {
 		return nil, err
 	}
 
-	staticObjectCount, err := readU16(reader)
+	staticObjectCount, err := reader.ReadUint16()
 	if err != nil {
 		return nil, err
 	}
@@ -121,7 +92,7 @@ func decodeLegacyBlock(reader *bytes.Reader, version uint8) (*MapBlock, error) {
 		if err != nil {
 			return nil, err
 		}
-		dataSize, err := readU16(reader)
+		dataSize, err := reader.ReadUint16()
 		if err != nil {
 			return nil, err
 		}
@@ -149,7 +120,7 @@ func decodeLegacyBlock(reader *bytes.Reader, version uint8) (*MapBlock, error) {
 	}, nil
 }
 
-func decodeBlock(reader *bytes.Reader) (*MapBlock, error) {
+func decodeBlock(reader *binaryReader) (*MapBlock, error) {
 	z, err := zstd.NewReader(reader)
 	if err != nil {
 		return nil, err
@@ -161,7 +132,7 @@ func decodeBlock(reader *bytes.Reader) (*MapBlock, error) {
 		return nil, err
 	}
 
-	reader = bytes.NewReader(data)
+	reader = newBinaryReader(data)
 
 	// Skip:
 	// - uint8 flags
@@ -197,9 +168,9 @@ func decodeBlock(reader *bytes.Reader) (*MapBlock, error) {
 }
 
 func DecodeMapBlock(data []byte) (*MapBlock, error) {
-	reader := bytes.NewReader(data)
+	reader := newBinaryReader(data)
 
-	version, err := readU8(reader)
+	version, err := reader.ReadUint8()
 	if err != nil {
 		return nil, err
 	}

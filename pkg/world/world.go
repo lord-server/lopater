@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 	"path/filepath"
+
+	"github.com/lord-server/lopater/pkg/block"
 )
 
 type Position struct {
@@ -44,4 +46,23 @@ func Open(path string) (*World, error) {
 		Metadata: metadata,
 		Storage:  storage,
 	}, nil
+}
+
+func (w *World) GetBlock(pos Position) (*block.MapBlock, error) {
+	data, err := w.Storage.GetBlockData(pos)
+	if err != nil {
+		return nil, fmt.Errorf("failed to %w", err)
+	}
+
+	// Block doesn't exist
+	if data == nil {
+		return nil, nil
+	}
+
+	mapBlock, err := block.DecodeMapBlock(data)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode MapBlock: %w", err)
+	}
+
+	return mapBlock, nil
 }
