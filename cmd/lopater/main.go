@@ -4,11 +4,8 @@ import (
 	"flag"
 	"log"
 
+	"github.com/lord-server/lopater/pkg/spatial"
 	"github.com/lord-server/lopater/pkg/world"
-)
-
-var (
-	ConfigPath = flag.String("config", "config.hjson", "Path to config")
 )
 
 func init() {
@@ -17,7 +14,7 @@ func init() {
 
 func main() {
 	if flag.NArg() < 1 {
-		log.Fatalf("usage: lopater [-config /path/to/config.hjson] </path/to/world>")
+		log.Fatalf("usage: lopater </path/to/world>")
 	}
 	worldPath := flag.Args()[0]
 
@@ -28,7 +25,7 @@ func main() {
 
 	log.Printf("backend = %v", w.Metadata.BackendType)
 
-	block, err := w.GetBlock(world.Position{
+	block, err := w.GetBlock(spatial.BlockPosition{
 		X: 0,
 		Y: 0,
 		Z: 0,
