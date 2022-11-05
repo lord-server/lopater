@@ -7,9 +7,9 @@ import (
 )
 
 type SQLiteStorage struct {
-	db       *sql.DB
-	getBlock *sql.Stmt
-	setBlock *sql.Stmt
+	db          *sql.DB
+	getMapBlock *sql.Stmt
+	setMapBlock *sql.Stmt
 }
 
 func openSQLite(path string) (*SQLiteStorage, error) {
@@ -18,25 +18,25 @@ func openSQLite(path string) (*SQLiteStorage, error) {
 		return nil, err
 	}
 
-	getBlock, err := db.Prepare("SELECT data FROM blocks WHERE pos = ?")
+	getMapBlock, err := db.Prepare("SELECT data FROM blocks WHERE pos = ?")
 	if err != nil {
 		return nil, err
 	}
-	setBlock, err := db.Prepare("INSERT INTO blocks(pos, data) VALUES(?, ?) ON CONFLICT(pos) DO UPDATE SET data = excluded.data")
+	setMapBlock, err := db.Prepare("INSERT INTO blocks(pos, data) VALUES(?, ?) ON CONFLICT(pos) DO UPDATE SET data = excluded.data")
 	if err != nil {
 		return nil, err
 	}
 
 	return &SQLiteStorage{
-		db:       db,
-		getBlock: getBlock,
-		setBlock: setBlock,
+		db:          db,
+		getMapBlock: getMapBlock,
+		setMapBlock: setMapBlock,
 	}, nil
 }
 
-func (s *SQLiteStorage) GetBlockData(pos spatial.BlockPosition) ([]byte, error) {
+func (s *SQLiteStorage) GetMapBlockData(pos spatial.MapBlockPosition) ([]byte, error) {
 	var data []byte
-	err := s.getBlock.QueryRow(pos.Encode()).Scan(&data)
+	err := s.getMapBlock.QueryRow(pos.Encode()).Scan(&data)
 
 	if err != nil {
 		return data, err
@@ -45,7 +45,7 @@ func (s *SQLiteStorage) GetBlockData(pos spatial.BlockPosition) ([]byte, error) 
 	return data, nil
 }
 
-func (s *SQLiteStorage) SetBlockData(pos spatial.BlockPosition, data []byte) error {
+func (s *SQLiteStorage) SetMapBlockData(pos spatial.MapBlockPosition, data []byte) error {
 	panic("unimplemented")
 }
 

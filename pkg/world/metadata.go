@@ -46,6 +46,9 @@ func (m *WorldMetadata) parseLine(line string) error {
 }
 
 func ReadMetadata(worldMtPath string) (WorldMetadata, error) {
+	// FIXME: this parser assumes that world.mt files are well-formed
+	// and not malicious
+
 	metadata := WorldMetadata{
 		BackendType: BackendSQLite,
 		Variables:   make(map[string]string),

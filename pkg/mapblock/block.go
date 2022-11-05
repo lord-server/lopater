@@ -1,28 +1,29 @@
-package block
+package mapblock
 
 import (
 	"fmt"
 	"io"
 )
 
-// MinSupportedVersion and MaxSupportedVersion provide version range
-// where correct encoding is guaranteed to be correct. Using decoder on MapBlocks
-// outside of this range will produce an error.
+// MinSupportedVersion and MaxSupportedVersion provide version range where
+// decoding is guaranteed to work. Using decoder on MapBlocks outside of
+// this range will produce an error.
 const (
 	MinSupportedVersion = 25
 	MaxSupportedVersion = 29
 )
 
-// BlockSize defines the side length of a MapBlock in nodes
-const BlockSize = 16
+// MapBlockSize defines the side length of a single MapBlock in nodes
+const MapBlockSize = 16
 
-// BlockVolume defines the volume of a MapBlock in nodes
-const BlockVolume = BlockSize * BlockSize * BlockSize
+// MapBlockVolume defines the volume of a single MapBlock in nodes
+const MapBlockVolume = MapBlockSize * MapBlockSize * MapBlockSize
 
 // NodeSizeInBytes is the amount of space (in bytes) required to store a single
 // node in a non-compressed MapBlock
 const NodeSizeInBytes = 4
 
+// Node represents a node (usually a cube) inside MapBlock
 type Node struct {
 	ID     uint16
 	Param1 uint8
@@ -175,8 +176,8 @@ func readNodeTimers(reader *binaryReader) ([]NodeTimer, error) {
 	return nodeTimers, nil
 }
 
-// decodeLegacyBlock decodes zlib-compressed MapBlocks (Minetest versions before 5.5)
-func decodeLegacyBlock(reader *binaryReader, version uint8) (*MapBlock, error) {
+// decodeLegacyMapBlock decodes zlib-compressed MapBlocks (Minetest versions before 5.5)
+func decodeLegacyMapBlock(reader *binaryReader, version uint8) (*MapBlock, error) {
 	var mapBlock MapBlock
 	var err error
 
@@ -254,8 +255,8 @@ func decodeLegacyBlock(reader *binaryReader, version uint8) (*MapBlock, error) {
 	return &mapBlock, nil
 }
 
-// decodeBlock decodes MapBlocks zstd-compressed MapBlocks (Minetest 5.5 onwards)
-func decodeBlock(reader *binaryReader) (*MapBlock, error) {
+// decodeMapBlock decodes MapBlocks zstd-compressed MapBlocks (Minetest 5.5 onwards)
+func decodeMapBlock(reader *binaryReader) (*MapBlock, error) {
 	panic("unimplemented")
 }
 
@@ -272,12 +273,12 @@ func Decode(data []byte) (*MapBlock, error) {
 	}
 
 	if version < 29 {
-		mapblock, err := decodeLegacyBlock(reader, version)
+		mapblock, err := decodeLegacyMapBlock(reader, version)
 		if err != nil {
 			return nil, err
 		}
 		return mapblock, nil
 	}
 
-	return decodeBlock(reader)
+	return decodeMapBlock(reader)
 }

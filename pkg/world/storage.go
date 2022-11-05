@@ -2,11 +2,14 @@ package world
 
 import (
 	"github.com/lord-server/lopater/pkg/spatial"
-	_ "github.com/mattn/go-sqlite3"
 )
 
+// Storage abstracts map storage facilities and acts as a key-value database.
+// As of Minetest 5.7, each coordinate uses only 12 bits (and packing position
+// inside 64-bit integer is possible), although implementors shouldn't rely on
+// this fact.
 type Storage interface {
-	GetBlockData(pos spatial.BlockPosition) ([]byte, error)
-	SetBlockData(pos spatial.BlockPosition, data []byte) error
+	GetMapBlockData(pos spatial.MapBlockPosition) ([]byte, error)
+	SetMapBlockData(pos spatial.MapBlockPosition, data []byte) error
 	Close()
 }

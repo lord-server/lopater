@@ -1,4 +1,4 @@
-package block
+package mapblock
 
 type readerCounter struct {
 	inner *binaryReader

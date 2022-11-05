@@ -28,7 +28,7 @@ func (s *PostgresStorage) Close() {
 	s.conn.Close()
 }
 
-func (s *PostgresStorage) GetBlockData(pos spatial.BlockPosition) ([]byte, error) {
+func (s *PostgresStorage) GetMapBlockData(pos spatial.MapBlockPosition) ([]byte, error) {
 	var data []byte
 	const query = "SELECT data FROM blocks WHERE posx=$1 and posy=$2 and posz=$3"
 	err := s.conn.QueryRow(context.Background(), query, pos.X, pos.Y, pos.Z).Scan(&data)
@@ -40,9 +40,9 @@ func (s *PostgresStorage) GetBlockData(pos spatial.BlockPosition) ([]byte, error
 	return data, nil
 }
 
-func (s *PostgresStorage) SetBlockData(pos spatial.BlockPosition, data []byte) error {
+func (s *PostgresStorage) SetMapBlockData(pos spatial.MapBlockPosition, data []byte) error {
 	const query = `
-	INSERT INTO BLOCKS(posx, posy, posz, data)
+	INSERT INTO blocks(posx, posy, posz, data)
 		VALUES($1, $2, $3, $4)
 		ON CONFLICT(posx, posy, posz) DO
 			UPDATE SET data = EXCLUDED.data

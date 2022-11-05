@@ -5,7 +5,7 @@ import (
 	"log"
 	"path/filepath"
 
-	"github.com/lord-server/lopater/pkg/block"
+	"github.com/lord-server/lopater/pkg/mapblock"
 	"github.com/lord-server/lopater/pkg/spatial"
 )
 
@@ -14,8 +14,6 @@ type World struct {
 	Storage  Storage
 }
 
-// FIXME: this parser assumes that world.mt files are well-formed
-// and not malicious
 func Open(path string) (*World, error) {
 	log.Printf("world path: %v", path)
 	metadata, err := ReadMetadata(filepath.Join(path, "world.mt"))
@@ -45,18 +43,18 @@ func Open(path string) (*World, error) {
 	}, nil
 }
 
-func (w *World) GetBlock(pos spatial.BlockPosition) (*block.MapBlock, error) {
-	data, err := w.Storage.GetBlockData(pos)
+func (w *World) GetMapBlock(pos spatial.MapBlockPosition) (*mapblock.MapBlock, error) {
+	data, err := w.Storage.GetMapBlockData(pos)
 	if err != nil {
 		return nil, fmt.Errorf("failed to %w", err)
 	}
 
-	// Block doesn't exist
+	// MapBlock doesn't exist
 	if data == nil {
 		return nil, nil
 	}
 
-	mapBlock, err := block.Decode(data)
+	mapBlock, err := mapblock.Decode(data)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode MapBlock: %w", err)
 	}

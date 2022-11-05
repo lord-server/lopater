@@ -26,7 +26,7 @@ func main() {
 
 	log.Printf("backend = %v", w.Metadata.BackendType)
 
-	block, err := w.GetBlock(spatial.BlockPosition{
+	mapBlock, err := w.GetMapBlock(spatial.MapBlockPosition{
 		X: 0,
 		Y: 0,
 		Z: 0,
@@ -35,7 +35,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	} else {
-		log.Fatal(block)
+		log.Fatal(mapBlock)
 	}
 
 }
