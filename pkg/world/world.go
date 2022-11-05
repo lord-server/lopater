@@ -2,7 +2,6 @@ package world
 
 import (
 	"fmt"
-	"log"
 	"path/filepath"
 
 	"github.com/lord-server/lopater/pkg/mapblock"
@@ -15,7 +14,6 @@ type World struct {
 }
 
 func Open(path string) (*World, error) {
-	log.Printf("world path: %v", path)
 	metadata, err := ReadMetadata(filepath.Join(path, "world.mt"))
 	if err != nil {
 		return nil, err

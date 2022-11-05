@@ -24,8 +24,6 @@ func main() {
 	}
 	defer w.Close()
 
-	log.Printf("backend = %v", w.Metadata.BackendType)
-
 	mapBlock, err := w.GetMapBlock(spatial.MapBlockPosition{
 		X: 0,
 		Y: 0,
