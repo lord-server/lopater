@@ -16,6 +16,7 @@ const (
 
 type WorldMetadata struct {
 	BackendType BackendType
+	Variables   map[string]string
 }
 
 func parseBackend(backend string) (BackendType, error) {
@@ -39,22 +40,16 @@ func (m *WorldMetadata) parseLine(line string) error {
 	key := strings.TrimSpace(parts[0])
 	value := strings.TrimSpace(parts[1])
 
-	var err error
-
-	// FIXME: return error if required fields weren't found
-	switch key {
-	case "backend":
-		m.BackendType, err = parseBackend(value)
-		if err != nil {
-			return err
-		}
-	}
+	m.Variables[key] = value
 
 	return nil
 }
 
 func ReadMetadata(worldMtPath string) (WorldMetadata, error) {
-	var metadata WorldMetadata
+	metadata := WorldMetadata{
+		BackendType: BackendSQLite,
+		Variables:   make(map[string]string),
+	}
 
 	file, err := os.Open(worldMtPath)
 	if err != nil {
@@ -71,6 +66,16 @@ func ReadMetadata(worldMtPath string) (WorldMetadata, error) {
 		}
 
 		metadata.parseLine(line)
+	}
+
+	if backend, ok := metadata.Variables["backend"]; ok {
+		backendType, err := parseBackend(backend)
+		if err != nil {
+			return metadata, err
+		}
+		metadata.BackendType = backendType
+	} else {
+		return metadata, fmt.Errorf("world metadata doesn't specify backend")
 	}
 
 	return metadata, nil

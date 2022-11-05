@@ -22,6 +22,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to open world at %v: %v", worldPath, err)
 	}
+	defer w.Close()
 
 	log.Printf("backend = %v", w.Metadata.BackendType)
 
@@ -36,4 +37,5 @@ func main() {
 	} else {
 		log.Fatal(block)
 	}
+
 }

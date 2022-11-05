@@ -8,4 +8,5 @@ import (
 type Storage interface {
 	GetBlockData(pos spatial.BlockPosition) ([]byte, error)
 	SetBlockData(pos spatial.BlockPosition, data []byte) error
+	Close()
 }

@@ -46,5 +46,9 @@ func (s *SQLiteStorage) GetBlockData(pos spatial.BlockPosition) ([]byte, error) 
 }
 
 func (s *SQLiteStorage) SetBlockData(pos spatial.BlockPosition, data []byte) error {
-	return nil
+	panic("unimplemented")
+}
+
+func (s *SQLiteStorage) Close() {
+	s.db.Close()
 }

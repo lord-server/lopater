@@ -28,11 +28,15 @@ func Open(path string) (*World, error) {
 	switch metadata.BackendType {
 	case BackendSQLite:
 		s, err = openSQLite(filepath.Join(path, "map.sqlite"))
-		if err != nil {
-			return nil, fmt.Errorf("unable to open world: %w", err)
-		}
 	case BackendPostgreSQL:
-		panic("unimplemented")
+		params, ok := metadata.Variables["pgsql_connection"]
+		if !ok {
+			params = ""
+		}
+		s, err = openPostgres(params)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("unable to open world: %w", err)
 	}
 
 	return &World{
@@ -58,4 +62,8 @@ func (w *World) GetBlock(pos spatial.BlockPosition) (*block.MapBlock, error) {
 	}
 
 	return mapBlock, nil
+}
+
+func (w *World) Close() {
+	w.Storage.Close()
 }
