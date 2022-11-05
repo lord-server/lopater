@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/jackc/pgx v3.6.2+incompatible
 	github.com/jackc/pgx/v4 v4.17.2
-	github.com/mattn/go-sqlite3 v1.14.15
+	github.com/klauspost/compress v1.15.12
 )
 
 require (
