@@ -9,26 +9,26 @@ import (
 	"github.com/lord-server/lopater/pkg/spatial"
 )
 
-type PostgresStorage struct {
+type PostgresMapStorage struct {
 	conn *pgxpool.Pool
 }
 
-func openPostgres(params string) (*PostgresStorage, error) {
+func openPostgres(params string) (*PostgresMapStorage, error) {
 	conn, err := pgxpool.Connect(context.Background(), params)
 	if err != nil {
 		return nil, err
 	}
 
-	return &PostgresStorage{
+	return &PostgresMapStorage{
 		conn,
 	}, nil
 }
 
-func (s *PostgresStorage) Close() {
+func (s *PostgresMapStorage) Close() {
 	s.conn.Close()
 }
 
-func (s *PostgresStorage) GetMapBlockData(pos spatial.MapBlockPosition) ([]byte, error) {
+func (s *PostgresMapStorage) GetMapBlockData(pos spatial.MapBlockPosition) ([]byte, error) {
 	var data []byte
 	const query = "SELECT data FROM blocks WHERE posx=$1 and posy=$2 and posz=$3"
 	err := s.conn.QueryRow(context.Background(), query, pos.X, pos.Y, pos.Z).Scan(&data)
@@ -40,7 +40,7 @@ func (s *PostgresStorage) GetMapBlockData(pos spatial.MapBlockPosition) ([]byte,
 	return data, nil
 }
 
-func (s *PostgresStorage) SetMapBlockData(pos spatial.MapBlockPosition, data []byte) error {
+func (s *PostgresMapStorage) SetMapBlockData(pos spatial.MapBlockPosition, data []byte) error {
 	const query = `
 	INSERT INTO blocks(posx, posy, posz, data)
 		VALUES($1, $2, $3, $4)

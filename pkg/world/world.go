@@ -10,7 +10,7 @@ import (
 
 type World struct {
 	Metadata WorldMetadata
-	Storage  Storage
+	Storage  MapStorage
 }
 
 func Open(path string) (*World, error) {
@@ -19,25 +19,26 @@ func Open(path string) (*World, error) {
 		return nil, err
 	}
 
-	var s Storage
+	var storage MapStorage
 
 	switch metadata.BackendType {
 	case BackendSQLite:
-		s, err = openSQLite(filepath.Join(path, "map.sqlite"))
+		storage, err = openSQLite(filepath.Join(path, "map.sqlite"))
 	case BackendPostgreSQL:
 		params, ok := metadata.Variables["pgsql_connection"]
 		if !ok {
 			params = ""
 		}
-		s, err = openPostgres(params)
+		storage, err = openPostgres(params)
 	}
+
 	if err != nil {
 		return nil, fmt.Errorf("unable to open world: %w", err)
 	}
 
 	return &World{
 		Metadata: metadata,
-		Storage:  s,
+		Storage:  storage,
 	}, nil
 }
 

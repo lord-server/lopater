@@ -6,13 +6,13 @@ import (
 	"github.com/lord-server/lopater/pkg/spatial"
 )
 
-type SQLiteStorage struct {
+type SQLiteMapStorage struct {
 	db          *sql.DB
 	getMapBlock *sql.Stmt
 	setMapBlock *sql.Stmt
 }
 
-func openSQLite(path string) (*SQLiteStorage, error) {
+func openSQLite(path string) (*SQLiteMapStorage, error) {
 	db, err := sql.Open("sqlite3", path)
 	if err != nil {
 		return nil, err
@@ -27,14 +27,14 @@ func openSQLite(path string) (*SQLiteStorage, error) {
 		return nil, err
 	}
 
-	return &SQLiteStorage{
+	return &SQLiteMapStorage{
 		db:          db,
 		getMapBlock: getMapBlock,
 		setMapBlock: setMapBlock,
 	}, nil
 }
 
-func (s *SQLiteStorage) GetMapBlockData(pos spatial.MapBlockPosition) ([]byte, error) {
+func (s *SQLiteMapStorage) GetMapBlockData(pos spatial.MapBlockPosition) ([]byte, error) {
 	var data []byte
 	err := s.getMapBlock.QueryRow(pos.Encode()).Scan(&data)
 
@@ -45,10 +45,10 @@ func (s *SQLiteStorage) GetMapBlockData(pos spatial.MapBlockPosition) ([]byte, e
 	return data, nil
 }
 
-func (s *SQLiteStorage) SetMapBlockData(pos spatial.MapBlockPosition, data []byte) error {
+func (s *SQLiteMapStorage) SetMapBlockData(pos spatial.MapBlockPosition, data []byte) error {
 	panic("unimplemented")
 }
 
-func (s *SQLiteStorage) Close() {
+func (s *SQLiteMapStorage) Close() {
 	s.db.Close()
 }
