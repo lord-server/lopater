@@ -11,7 +11,7 @@ type BlockDataHandler func(x, y, z int, data []byte) error
 
 type WorldStorage interface {
 	GetBlockData(ctx context.Context, x, y, z int) ([]byte, error)
-	GetBlocksData(ctx context.Context, cb BlockDataHandler) error
+	GetBlocksData(ctx context.Context, region Region, cb BlockDataHandler) error
 	SetBlockData(ctx context.Context, x, y, z int, data []byte) error
 }
 
@@ -53,23 +53,20 @@ func (s *PgStorage) GetBlockData(ctx context.Context, x, y, z int) ([]byte, erro
 	return blockData, nil
 }
 
-func (s *PgStorage) GetBlocksData(ctx context.Context, handler BlockDataHandler) error {
+func (s *PgStorage) GetBlocksData(ctx context.Context, region Region, handler BlockDataHandler) error {
 	const sql = `select posx, posy, posz, data
 	             from blocks
 	             where posx between $1 and $2
 	               and posy between $3 and $4
 	               and posz between $5 and $6`
 
-	const (
-		minX = -300
-		maxX = 300
-		minY = -300
-		maxY = 300
-		minZ = -300
-		maxZ = 300
-	)
-
-	rows, err := s.pool.Query(ctx, sql, minX, maxX, minY, maxY, minZ, maxZ)
+	rows, err := s.pool.Query(ctx, sql,
+		region.MinX,
+		region.MaxX,
+		region.MinY,
+		region.MaxY,
+		region.MinZ,
+		region.MaxZ)
 	if err != nil {
 		return err
 	}

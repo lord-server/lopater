@@ -15,7 +15,7 @@ go build
 ## usage
 
 ```
-./lopater [-threads 2] <path/to/world>
+./lopater [-threads 2] [-region -3,-3,-3,3,3,3] <path/to/world>
 ```
 
 ## license

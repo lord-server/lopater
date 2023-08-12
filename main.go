@@ -74,7 +74,7 @@ func (s *stats) Report() {
 	}
 }
 
-func countNodes(ctx context.Context, w *World, threads int) stats {
+func countNodes(ctx context.Context, w *World, region Region, threads int) stats {
 	type blockData struct {
 		x, y, z int
 		data    []byte
@@ -114,7 +114,7 @@ func countNodes(ctx context.Context, w *World, threads int) stats {
 		}()
 	}
 
-	err := w.storage.GetBlocksData(ctx, func(x, y, z int, data []byte) error {
+	err := w.storage.GetBlocksData(ctx, region, func(x, y, z int, data []byte) error {
 		blockDataChan <- blockData{
 			x:    x,
 			y:    y,
@@ -148,6 +148,7 @@ func countNodes(ctx context.Context, w *World, threads int) stats {
 
 var (
 	threadCount = flag.Int("threads", 2, "number of data processing threads")
+	regionSpec  = flag.String("region", "-3,-3,-3,3,3,3", "cuboid region in this format: minX,minY,minZ,maxX,maxY,maxZ")
 )
 
 func main() {
@@ -167,7 +168,14 @@ func main() {
 		log.Fatalf("failed to open world: %v", err)
 	}
 
-	stats := countNodes(ctx, world, *threadCount)
+	log.Printf("region: %v", *regionSpec)
+
+	region, err := ParseRegion(*regionSpec)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	stats := countNodes(ctx, world, region, *threadCount)
 
 	stats.Report()
 }

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
@@ -16,6 +17,10 @@ var (
 	ErrInvalidStaticObjVersion = errors.New("block has invalid static object version")
 	ErrInvalidMappingVersion   = errors.New("block has invalid mapping version")
 	ErrInvalidTimerDataLength  = errors.New("block has invalid timer data size")
+
+	ErrInvalidRegionFormat = errors.New("invalid region format")
+	ErrMismatchedCoords    = errors.New("region likely has mismatched min/max coordinates")
+	ErrEmptyRegion         = errors.New("specified region is empty")
 )
 
 type World struct {
@@ -334,4 +339,46 @@ func readNodeTimer(r *reader) (NodeTimer, error) {
 		Timeout:  int32(timeout),
 		Elapsed:  int32(elapsed),
 	}, nil
+}
+
+type Region struct {
+	MinX, MinY, MinZ int
+	MaxX, MaxY, MaxZ int
+}
+
+func ParseRegion(regionSpec string) (region Region, err error) {
+	parts := strings.Split(regionSpec, ",")
+
+	if len(parts) != 6 {
+		return region, ErrInvalidRegionFormat
+	}
+
+	coords := make([]int, 6)
+
+	for i, s := range parts {
+		coords[i], err = strconv.Atoi(s)
+
+		if err != nil {
+			return region, errors.Join(ErrInvalidRegionFormat, err)
+		}
+	}
+
+	region = Region{
+		MinX: coords[0],
+		MinY: coords[1],
+		MinZ: coords[2],
+		MaxX: coords[3],
+		MaxY: coords[4],
+		MaxZ: coords[5],
+	}
+
+	if region.MinX == region.MaxX || region.MinY == region.MaxY || region.MinZ == region.MaxZ {
+		return region, ErrEmptyRegion
+	}
+
+	if region.MinX > region.MaxX || region.MinY > region.MaxY || region.MinZ > region.MaxZ {
+		return region, ErrMismatchedCoords
+	}
+
+	return region, nil
 }
