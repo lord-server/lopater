@@ -74,14 +74,13 @@ func (s *stats) Report() {
 	}
 }
 
-func countNodes(ctx context.Context, w *World) stats {
+func countNodes(ctx context.Context, w *World, threads int) stats {
 	type blockData struct {
 		x, y, z int
 		data    []byte
 	}
 
 	var wg sync.WaitGroup
-	threads := 10
 
 	blockDataChan := make(chan blockData, 10000)
 	statsChan := make(chan stats, threads)
@@ -147,6 +146,10 @@ func countNodes(ctx context.Context, w *World) stats {
 	return stats
 }
 
+var (
+	threadCount = flag.Int("threads", 2, "number of data processing threads")
+)
+
 func main() {
 	flag.Parse()
 
@@ -164,7 +167,7 @@ func main() {
 		log.Fatalf("failed to open world: %v", err)
 	}
 
-	stats := countNodes(ctx, world)
+	stats := countNodes(ctx, world, *threadCount)
 
 	stats.Report()
 }
